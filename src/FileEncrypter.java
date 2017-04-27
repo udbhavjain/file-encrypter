@@ -11,9 +11,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.HashMap;
 import java.util.Scanner;
 
-/**
- * Created by udbhav on 29/11/16.
- */
+
 public class FileEncrypter {
 
     // Function for file selection
