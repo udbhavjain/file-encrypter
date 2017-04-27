@@ -1,4 +1,5 @@
 import javax.crypto.Cipher;
+import javax.crypto.CipherOutputStream;
 import javax.crypto.SealedObject;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -44,7 +45,7 @@ public class FileEncrypter {
 
 
             File file = getSelectedFile();
-            byte[] fileData = Files.readAllBytes(file.toPath());
+            //byte[] fileData = Files.readAllBytes(file.toPath());
             String fileName = file.getName();
             String path = file.getParent();
 
@@ -121,9 +122,14 @@ public class FileEncrypter {
             keyCipher.init(Cipher.ENCRYPT_MODE,pbKey);
 
 
+
             //The file name and content are encrypted with the new AES cipher.
             SealedObject sealedName = new SealedObject(fileName,cipher);
-            SealedObject sealedContent = new SealedObject(fileData,cipher);
+            //SealedObject sealedContent = new SealedObject(fileData,cipher);
+
+
+
+
             //The key and IV are encrypted with the public key.
             SealedObject sealedKey = new SealedObject(keyb,keyCipher);
             SealedObject sealedIV = new SealedObject(ivb,keyCipher);
@@ -134,12 +140,24 @@ public class FileEncrypter {
             dataStore.put(0,sealedKey);
             dataStore.put(1,sealedIV);
             dataStore.put(2,sealedName);
-            dataStore.put(3,sealedContent);
 
             //The encrypted structure is saved.
             ObjectOutputStream enWriter = new ObjectOutputStream(new FileOutputStream(path + "/" + fileName + ".sealed"));
             enWriter.writeObject(dataStore);
             enWriter.close();
+
+            CipherOutputStream contentWriter = new CipherOutputStream(new FileOutputStream(path+ "/" + fileName + ".sealed",true),cipher);
+            byte[] buffer = new byte[1024];
+            int read;
+            InputStream fileReader = new FileInputStream(file);
+            while((read = fileReader.read(buffer))!=-1) {
+
+                contentWriter.write(buffer,0,read);
+            }
+            fileReader.close();
+            contentWriter.close();
+
+
             System.out.println("Encryption successful!\nExiting.");
             System.exit(0);
 
