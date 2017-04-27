@@ -12,9 +12,7 @@ import java.security.PrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.HashMap;
 
-/**
- * Created by udbhav on 29/11/16.
- */
+
 public class FileDecrypter {
 
     //Method for selecting files.
