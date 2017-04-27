@@ -7,6 +7,7 @@ import javax.swing.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.security.*;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -82,11 +83,11 @@ public class FileEncrypter {
                     System.out.println("Select public key: ");
                     File keyFile = getSelectedFile();
 
-                    ObjectInputStream oin = new ObjectInputStream(new FileInputStream(keyFile));
+                   byte[] pbKeyBytes = Files.readAllBytes(keyFile.toPath());
+                    KeyFactory kf = KeyFactory.getInstance("RSA");
+                    pbKey = kf.generatePublic(new X509EncodedKeySpec(pbKeyBytes));
 
 
-                    pbKey = (PublicKey) oin.readObject();
-                    oin.close();
                 } catch(ClassCastException ccx)
                 {
                     //In case an invalid public key is selected.
@@ -159,7 +160,7 @@ public class FileEncrypter {
 
         }
 
-        catch(IOException iox){System.out.println("IO Error! Exiting!");System.exit(2); /*General IO errors.*/}
+        catch(IOException iox){System.out.println("IO Error! Exiting!");iox.printStackTrace();System.exit(2); /*General IO errors.*/}
         catch(Exception x){System.out.println("Error! Exiting!"); x.printStackTrace();System.exit(3);/*Other errors*/  }
     }
 }
