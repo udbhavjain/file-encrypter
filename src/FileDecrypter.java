@@ -5,8 +5,11 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.swing.*;
 import java.io.*;
+import java.nio.file.Files;
 import java.security.GeneralSecurityException;
+import java.security.KeyFactory;
 import java.security.PrivateKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.HashMap;
 
 /**
@@ -44,9 +47,10 @@ public class FileDecrypter {
 
             PrivateKey pvKey = null;
             try {
-                ObjectInputStream keyReader = new ObjectInputStream(new FileInputStream(pvKeyFile));
-                pvKey = (PrivateKey) keyReader.readObject();
-                keyReader.close();
+                byte[] keyBytes = Files.readAllBytes(pvKeyFile.toPath());
+                ByteArrayInputStream bin = new ByteArrayInputStream(keyBytes);
+                KeyFactory kf =  KeyFactory.getInstance("RSA");
+                pvKey =kf.generatePrivate(new PKCS8EncodedKeySpec(keyBytes));
             }catch(ClassCastException ccx){System.out.println("\nInvalid private key! Aborting!");System.exit(2);/*In case an invalid file is selected.*/}
 
             HashMap<Integer, SealedObject> sealedStuff = null;

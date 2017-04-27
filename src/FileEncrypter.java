@@ -45,7 +45,6 @@ public class FileEncrypter {
 
 
             File file = getSelectedFile();
-            //byte[] fileData = Files.readAllBytes(file.toPath());
             String fileName = file.getName();
             String path = file.getParent();
 
@@ -65,17 +64,13 @@ public class FileEncrypter {
                 pbKey = keyPair.getPublic();
 
 
+                OutputStream pbFileWriter = new FileOutputStream(path+ "/" + "PUBLIC.key");
+                pbFileWriter.write(pbKey.getEncoded());
+                pbFileWriter.close();
+                OutputStream pvFileWriter = new FileOutputStream(path+ "/" + "PRIVATE.key");
+                pvFileWriter.write(pvKey.getEncoded());
+                pvFileWriter.close();
 
-                ObjectOutputStream pbOut = new ObjectOutputStream(new FileOutputStream(path+ "/" + "PUBLIC.key"));
-
-                pbOut.writeObject(pbKey);
-                pbOut.close();
-
-
-
-                ObjectOutputStream pvOut = new ObjectOutputStream(new FileOutputStream(path+ "/" + "PRIVATE.key"));
-                pvOut.writeObject(pvKey);
-                pvOut.close();
 
                 System.out.println("Keys generated!\nDo not share your private key with anyone!");
 
