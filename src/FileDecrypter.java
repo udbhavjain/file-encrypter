@@ -1,4 +1,5 @@
 import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
 import javax.crypto.SealedObject;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -51,9 +52,11 @@ public class FileDecrypter {
             HashMap<Integer, SealedObject> sealedStuff = null;
 
             try {
-                ObjectInputStream fileReader = new ObjectInputStream(new FileInputStream(file));
-                sealedStuff = (HashMap<Integer, SealedObject>) fileReader.readObject();
-                fileReader.close();
+                FileInputStream fileReader = new FileInputStream(file);
+                ObjectInputStream headerReader = new ObjectInputStream(fileReader);
+                sealedStuff = (HashMap<Integer, SealedObject>) headerReader.readObject();
+                long content_start = fileReader.getChannel().position();
+
 
 
                 //Initialise decryption cipher with private key.
@@ -78,13 +81,18 @@ public class FileDecrypter {
             SealedObject sealedName = sealedStuff.get(2);
             String fileName = (String)sealedName.getObject(contentCipher);
 
+                CipherInputStream contentReader = new CipherInputStream(fileReader,contentCipher);
+                OutputStream fileOut = new FileOutputStream(fileName);
+                int read;
+                byte[] buffer = new byte[1024];
+                while((read = contentReader.read(buffer)) !=-1)
+                {
+                    fileOut.write(buffer,0,read);
+                }
+                contentReader.close();
+                headerReader.close();
 
-            SealedObject sealedContent = sealedStuff.get(3);
-            byte[] content = (byte[])sealedContent.getObject(contentCipher);
-            //Write decrypted data in file.
-            FileOutputStream fileOut = new FileOutputStream(fileName);
-            fileOut.write(content);
-            fileOut.close();
+                fileOut.close();
 
             }catch(ClassCastException ccx){System.out.println("Invalid sealed file! Aborting!");System.exit(3);/*In case an invalid sealed file is selected.*/}
 
