@@ -36,7 +36,7 @@ public class FileEncrypter {
 
 
 
-    public static void main(String[] args) {
+    public void start() {
         try {
 
             Scanner scanner = new Scanner(System.in);
