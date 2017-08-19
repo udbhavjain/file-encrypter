@@ -35,7 +35,7 @@ public class FileDecrypter {
 
     }
 
-    public static void main(String[] args) {
+    public void start() {
         try{
 
             System.out.println("Select File: ");
