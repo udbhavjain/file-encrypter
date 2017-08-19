@@ -81,7 +81,7 @@ public class FileEncrypter {
                     System.out.println("Select public key: ");
                     File keyFile = getSelectedFile();
 
-                   byte[] pbKeyBytes = Files.readAllBytes(keyFile.toPath());
+                    byte[] pbKeyBytes = Files.readAllBytes(keyFile.toPath());
                     KeyFactory kf = KeyFactory.getInstance("RSA");
                     pbKey = kf.generatePublic(new X509EncodedKeySpec(pbKeyBytes));
 
@@ -119,9 +119,6 @@ public class FileEncrypter {
 
             //The file name and content are encrypted with the new AES cipher.
             SealedObject sealedName = new SealedObject(fileName,cipher);
-            //SealedObject sealedContent = new SealedObject(fileData,cipher);
-
-
 
 
             //The key and IV are encrypted with the public key.
@@ -129,20 +126,37 @@ public class FileEncrypter {
             SealedObject sealedIV = new SealedObject(ivb,keyCipher);
 
 
+            //Calculate hash
+
+            MessageDigest hashed = MessageDigest.getInstance("SHA-256");
+            InputStream hashInput = new FileInputStream(file);
+            byte[] hashBuffer = new byte[1024];
+            int read;
+            while((read = hashInput.read(hashBuffer))!=-1) {
+
+                hashed.update(hashBuffer,0,read);
+            }
+            SealedObject sealedHash = new SealedObject(hashed.digest(),cipher);
+
             //The encrypted data is stored in a hashmap with specific key bindings.
             HashMap<Integer, SealedObject> dataStore = new HashMap<Integer, SealedObject>();
             dataStore.put(0,sealedKey);
             dataStore.put(1,sealedIV);
             dataStore.put(2,sealedName);
+            dataStore.put(3,sealedHash);
 
-            //The encrypted structure is saved.
+            //Write metadata
             ObjectOutputStream enWriter = new ObjectOutputStream(new FileOutputStream(path + "/" + fileName + ".sealed"));
             enWriter.writeObject(dataStore);
             enWriter.close();
 
+
+
+
+
             CipherOutputStream contentWriter = new CipherOutputStream(new FileOutputStream(path+ "/" + fileName + ".sealed",true),cipher);
             byte[] buffer = new byte[1024];
-            int read;
+
             InputStream fileReader = new FileInputStream(file);
             while((read = fileReader.read(buffer))!=-1) {
 
@@ -150,6 +164,8 @@ public class FileEncrypter {
             }
             fileReader.close();
             contentWriter.close();
+
+
 
 
             System.out.println("Encryption successful!\nExiting.");

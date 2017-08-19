@@ -8,8 +8,10 @@ import java.io.*;
 import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
+import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Arrays;
 import java.util.HashMap;
 
 
@@ -62,39 +64,53 @@ public class FileDecrypter {
 
 
                 //Initialise decryption cipher with private key.
-            Cipher deCipher = Cipher.getInstance("RSA");
-            deCipher.init(Cipher.DECRYPT_MODE,pvKey);
+                Cipher deCipher = Cipher.getInstance("RSA");
+                deCipher.init(Cipher.DECRYPT_MODE,pvKey);
 
                 //Get AES key bytes.
-            SealedObject sealedKey = sealedStuff.get(0);
-            byte[] keyBytes = (byte[])sealedKey.getObject(deCipher);
+                SealedObject sealedKey = sealedStuff.get(0);
+                byte[] keyBytes = (byte[])sealedKey.getObject(deCipher);
                 //Get AES IV bytes.
-            SealedObject sealedIV = sealedStuff.get(1);
-            byte[] IVBytes = (byte[])sealedIV.getObject(deCipher);
+                SealedObject sealedIV = sealedStuff.get(1);
+                byte[] IVBytes = (byte[])sealedIV.getObject(deCipher);
 
                 //Generate key and AES decryption cipher.
-            SecretKeySpec keySpec = new SecretKeySpec(keyBytes,"AES");
+                SecretKeySpec keySpec = new SecretKeySpec(keyBytes,"AES");
 
 
-            Cipher contentCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-            contentCipher.init(Cipher.DECRYPT_MODE,keySpec,new IvParameterSpec(IVBytes));
+                Cipher contentCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+                contentCipher.init(Cipher.DECRYPT_MODE,keySpec,new IvParameterSpec(IVBytes));
 
                 //Get decrypted name and content.
-            SealedObject sealedName = sealedStuff.get(2);
-            String fileName = (String)sealedName.getObject(contentCipher);
+                SealedObject sealedName = sealedStuff.get(2);
+                String fileName = (String)sealedName.getObject(contentCipher);
 
+                //Get decrypted hash of data
+                SealedObject sealedHash = sealedStuff.get(3);
+                byte[] dataHash = (byte[])sealedHash.getObject(contentCipher);
+
+                //Decrypt data and calculate hash
+
+                MessageDigest dataDigest = MessageDigest.getInstance("SHA-256");
                 CipherInputStream contentReader = new CipherInputStream(fileReader,contentCipher);
                 OutputStream fileOut = new FileOutputStream(fileName);
                 int read;
                 byte[] buffer = new byte[1024];
                 while((read = contentReader.read(buffer)) !=-1)
                 {
+                    dataDigest.update(buffer,0,read);
                     fileOut.write(buffer,0,read);
                 }
                 contentReader.close();
                 headerReader.close();
 
                 fileOut.close();
+                byte[] unpackedHash = dataDigest.digest();
+
+                if(Arrays.equals(unpackedHash,dataHash))System.out.println("Data decrypted and integrity verified!");
+                else System.out.println("Hash mismatch!");
+
+
 
             }catch(ClassCastException ccx){System.out.println("Invalid sealed file! Aborting!");System.exit(3);/*In case an invalid sealed file is selected.*/}
 
